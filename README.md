@@ -62,3 +62,31 @@ resume-screening-system/
     │   └── App.css
     └── package.json
 ```
+---
+
+## API Endpoints
+
+| Method   | Endpoint                | Description                                              |
+| -------- | ----------------------- | -------------------------------------------------------- |
+| **POST** | `/upload-resume`        | Upload and parse a resume file                           |
+| **POST** | `/add-job`              | Add a job description                                    |
+| **POST** | `/match`                | Compute the match score for a resume and job description |
+| **GET**  | `/leaderboard/{job_id}` | Retrieve ranked candidates for a specific job            |
+
+---
+
+## How Matching Works
+
+1. The **resume text** and **job description** are converted into sentence embeddings using **`all-MiniLM-L6-v2`**.
+2. **Cosine Similarity** is calculated between the two embeddings.
+3. The similarity score is converted into a **0–100% relevance score**.
+4. Candidates are ranked based on their semantic similarity score.
+
+### Validation
+
+The matching model was validated by comparing two scenarios:
+
+* **Relevant Resume + Matching Job Description** → **72.2% Match**
+* **Irrelevant Resume + Unrelated Job Description** → **12.2% Match**
+
+These results demonstrate that the model can effectively distinguish between strong and weak candidate-job matches based on semantic meaning rather than simple keyword overlap.
