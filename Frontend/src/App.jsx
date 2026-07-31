@@ -3,20 +3,76 @@ import axios from "axios";
 import "./App.css";
 
 function getScoreColor(score) {
-  if (score >= 60) return "#15803D";
-  if (score >= 35) return "#B45309";
-  return "#B91C1C";
+  if (score >= 60) return "#2DD4BF";
+  if (score >= 35) return "#FBBF24";
+  return "#F87171";
 }
 
-const PROCESSING_STEPS = [
-  "Parsing resume...",
-  "Analyzing skills...",
-  "Computing semantic similarity...",
-  "Finalizing score...",
-];
+function getAvatarColor(name) {
+  const colors = ["#818CF8", "#2DD4BF", "#FBBF24", "#F472B6", "#60A5FA", "#A78BFA"];
+  const idx = (name || "?").charCodeAt(0) % colors.length;
+  return colors[idx];
+}
+
+function getInitials(name) {
+  if (!name || name === "Not found") return "?";
+  const parts = name.trim().split(" ");
+  return parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : parts[0].slice(0, 2).toUpperCase();
+}
+
+const PROCESSING_STEPS = ["Parsing resume...", "Analyzing skills...", "Computing semantic similarity...", "Finalizing score..."];
+const NAV_ITEMS = ["Dashboard", "Candidates", "Job postings", "Settings"];
+
+function HeroGauge({ score }) {
+  const radius = 60;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (score / 100) * circumference;
+  const color = getScoreColor(score);
+  return (
+    <div style={{ position: "relative", width: "140px", height: "140px" }}>
+      <svg width="140" height="140" style={{ transform: "rotate(-90deg)" }}>
+        <circle cx="70" cy="70" r={radius} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" />
+        <circle cx="70" cy="70" r={radius} fill="none" stroke={color} strokeWidth="10" strokeLinecap="round"
+          strokeDasharray={circumference} strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 0.8s ease", filter: `drop-shadow(0 0 8px ${color}80)` }} />
+      </svg>
+      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "28px", fontWeight: 600, color }}>{Math.round(score)}%</span>
+      </div>
+    </div>
+  );
+}
+
+function ScoreDistributionChart({ candidates }) {
+  const buckets = [
+    { label: "0-20", min: 0, max: 20, color: "#F87171" },
+    { label: "20-40", min: 20, max: 40, color: "#FB923C" },
+    { label: "40-60", min: 40, max: 60, color: "#FBBF24" },
+    { label: "60-80", min: 60, max: 80, color: "#A3E635" },
+    { label: "80-100", min: 80, max: 100.01, color: "#2DD4BF" },
+  ];
+  const counts = buckets.map((b) => candidates.filter((c) => c.match_score >= b.min && c.match_score < b.max).length);
+  const maxCount = Math.max(...counts, 1);
+
+  return (
+    <div className="chart-card">
+      <h2 className="section-title" style={{ marginBottom: 0 }}>Score distribution</h2>
+      <p style={{ fontSize: "12px", color: "#6B7280", margin: "4px 0 0" }}>Number of candidates per score range</p>
+      <div className="chart-bars">
+        {buckets.map((b, i) => (
+          <div className="chart-bar-col" key={b.label}>
+            <span className="chart-bar-count">{counts[i]}</span>
+            <div className="chart-bar" style={{ height: `${(counts[i] / maxCount) * 100}%`, background: b.color, boxShadow: `0 0 12px ${b.color}60` }}></div>
+            <span className="chart-bar-label">{b.label}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function App() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [activeNav, setActiveNav] = useState("Dashboard");
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadResult, setUploadResult] = useState(null);
@@ -34,320 +90,229 @@ function App() {
 
   const [leaderboard, setLeaderboard] = useState(null);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     let interval;
     if (matchLoading) {
       setProcessingStepIndex(0);
-      interval = setInterval(() => {
-        setProcessingStepIndex((prev) => (prev + 1) % PROCESSING_STEPS.length);
-      }, 700);
+      interval = setInterval(() => setProcessingStepIndex((p) => (p + 1) % PROCESSING_STEPS.length), 700);
     }
     return () => clearInterval(interval);
   }, [matchLoading]);
 
-  const getErrorMessage = (err, fallback) => {
-    if (err.response && err.response.data && err.response.data.detail) {
-      return err.response.data.detail;
-    }
-    return fallback;
-  };
+  const getErrorMessage = (err, fallback) => (err.response?.data?.detail) || fallback;
 
-  const handleFileChange = (e) => {
-    setSelectedFile(e.target.files[0]);
-    setUploadResult(null);
-    setError("");
-  };
+  const handleFileChange = (e) => { setSelectedFile(e.target.files[0]); setUploadResult(null); setError(""); };
 
   const handleUpload = async () => {
-    if (!selectedFile) {
-      setError("Select a resume file (PDF or DOCX) first.");
-      return;
-    }
+    if (!selectedFile) { setError("Select a resume file (PDF or DOCX) first."); return; }
     const formData = new FormData();
     formData.append("file", selectedFile);
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/upload-resume",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+      const response = await axios.post("http://127.0.0.1:8000/upload-resume", formData, { headers: { "Content-Type": "multipart/form-data" } });
       setUploadResult(response.data);
-    } catch (err) {
-      setError(getErrorMessage(err, "Upload failed. Check that your backend server is running."));
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(getErrorMessage(err, "Upload failed. Check that your backend server is running.")); }
+    finally { setLoading(false); }
   };
 
   const handleAddJob = async () => {
-    if (!jobTitle || !jobDescription) {
-      setError("Enter both job title and description.");
-      return;
-    }
-    setJobLoading(true);
-    setError("");
+    if (!jobTitle || !jobDescription) { setError("Enter both job title and description."); return; }
+    setJobLoading(true); setError("");
     try {
-      const response = await axios.post(
-        `http://127.0.0.1:8000/add-job?title=${encodeURIComponent(jobTitle)}&description_text=${encodeURIComponent(jobDescription)}`
-      );
+      const response = await axios.post(`http://127.0.0.1:8000/add-job?title=${encodeURIComponent(jobTitle)}&description_text=${encodeURIComponent(jobDescription)}`);
       setJobResult(response.data);
-    } catch (err) {
-      setError(getErrorMessage(err, "Adding job failed. Check backend server."));
-      console.error(err);
-    } finally {
-      setJobLoading(false);
-    }
+    } catch (err) { setError(getErrorMessage(err, "Adding job failed. Check backend server.")); }
+    finally { setJobLoading(false); }
   };
 
   const handleMatch = async () => {
-    if (!uploadResult || !jobResult) {
-      setError("Upload a resume AND add a job description first.");
-      return;
-    }
-    setMatchLoading(true);
-    setError("");
+    if (!uploadResult || !jobResult) { setError("Upload a resume AND add a job description first."); return; }
+    setMatchLoading(true); setError("");
     try {
-      const response = await axios.post(
-        `http://127.0.0.1:8000/match?resume_id=${uploadResult.resume_id}&job_id=${jobResult.job_id}`
-      );
+      const response = await axios.post(`http://127.0.0.1:8000/match?resume_id=${uploadResult.resume_id}&job_id=${jobResult.job_id}`);
       setMatchResult(response.data);
-    } catch (err) {
-      setError(getErrorMessage(err, "Matching failed. Check backend server."));
-      console.error(err);
-    } finally {
-      setMatchLoading(false);
-    }
+    } catch (err) { setError(getErrorMessage(err, "Matching failed. Check backend server.")); }
+    finally { setMatchLoading(false); }
   };
 
   const handleGetLeaderboard = async () => {
-    if (!jobResult) {
-      setError("Add a job description first to see its leaderboard.");
-      return;
-    }
-    setLeaderboardLoading(true);
-    setError("");
+    if (!jobResult) { setError("Add a job description first to see its leaderboard."); return; }
+    setLeaderboardLoading(true); setError("");
     try {
-      const response = await axios.get(
-        `http://127.0.0.1:8000/leaderboard/${jobResult.job_id}`
-      );
+      const response = await axios.get(`http://127.0.0.1:8000/leaderboard/${jobResult.job_id}`);
       setLeaderboard(response.data);
-    } catch (err) {
-      setError(getErrorMessage(err, "Failed to fetch leaderboard. Check backend server."));
-      console.error(err);
-    } finally {
-      setLeaderboardLoading(false);
-    }
+    } catch (err) { setError(getErrorMessage(err, "Failed to fetch leaderboard. Check backend server.")); }
+    finally { setLeaderboardLoading(false); }
   };
 
-  const avgScore =
-    leaderboard && leaderboard.leaderboard.length > 0
-      ? (
-          leaderboard.leaderboard.reduce((sum, c) => sum + c.match_score, 0) /
-          leaderboard.leaderboard.length
-        ).toFixed(1)
-      : "0";
+  const avgScore = leaderboard?.leaderboard.length > 0
+    ? (leaderboard.leaderboard.reduce((s, c) => s + c.match_score, 0) / leaderboard.leaderboard.length).toFixed(1) : "0";
+  const topScore = leaderboard?.leaderboard.length > 0 ? leaderboard.leaderboard[0].match_score : 0;
+  const topCandidate = leaderboard?.leaderboard.length > 0 ? leaderboard.leaderboard[0].candidate_name : "\u2014";
 
-  const topCandidate =
-    leaderboard && leaderboard.leaderboard.length > 0
-      ? leaderboard.leaderboard[0].candidate_name
-      : "—";
+  const filteredCandidates = leaderboard
+    ? leaderboard.leaderboard.filter((c) =>
+        (c.candidate_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.skills || "").toLowerCase().includes(searchQuery.toLowerCase()))
+    : [];
+
+  const uploadPanel = (
+    <div className="panel panel-1">
+      <div className="panel-header"><div className="panel-icon">1</div><h2>Upload resume</h2></div>
+      <input type="file" accept=".pdf,.docx" onChange={handleFileChange} />
+      <button onClick={handleUpload} disabled={loading}>
+        <span className="btn-content">{loading && <span className="spinner"></span>}{loading ? "Uploading..." : "Upload"}</span>
+      </button>
+      {uploadResult && <div className="result-chip">Resume <span className="mono">#{uploadResult.resume_id}</span> \u2014 {uploadResult.file_name}</div>}
+    </div>
+  );
+
+  const jobPanel = (
+    <div className="panel panel-2">
+      <div className="panel-header"><div className="panel-icon">2</div><h2>Job description</h2></div>
+      <input type="text" placeholder="Job title" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} />
+      <textarea placeholder="Paste job description..." value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} rows="3" />
+      <button onClick={handleAddJob} disabled={jobLoading}>
+        <span className="btn-content">{jobLoading && <span className="spinner"></span>}{jobLoading ? "Adding..." : "Add job"}</span>
+      </button>
+      {jobResult && <div className="result-chip">Job <span className="mono">#{jobResult.job_id}</span> \u2014 {jobResult.title}</div>}
+    </div>
+  );
+
+  const matchPanel = (
+    <div className="panel panel-3" style={{ marginBottom: "18px" }}>
+      <div className="panel-header"><div className="panel-icon">3</div><h2>Run match</h2></div>
+      <button onClick={handleMatch} disabled={matchLoading}>
+        <span className="btn-content">{matchLoading && <span className="spinner"></span>}{matchLoading ? "Matching..." : "Run match"}</span>
+      </button>
+      {matchLoading && <div className="processing-panel"><span className="processing-dot"></span>{PROCESSING_STEPS[processingStepIndex]}</div>}
+      {!matchLoading && matchResult && (
+        <div className="match-score-display">
+          <p style={{ margin: "0 0 2px", fontSize: "12px", color: "#9CA3AF" }}>{matchResult.candidate_name} \u2192 {matchResult.job_title}</p>
+          <span className="score-number" style={{ color: getScoreColor(matchResult.match_score) }}>{matchResult.match_score}%</span>
+          <div className="score-bar-track"><div className="score-bar-fill" style={{ width: `${matchResult.match_score}%`, background: getScoreColor(matchResult.match_score) }} /></div>
+        </div>
+      )}
+    </div>
+  );
+
+  const candidateRows = (list) => list.map((c) => (
+    <div className="candidate-row" key={c.resume_id}>
+      <div className="candidate-rank">#{c.rank}</div>
+      <div className="candidate-avatar" style={{ background: getAvatarColor(c.candidate_name) }}>{getInitials(c.candidate_name)}</div>
+      <div className="candidate-info">
+        <p className="candidate-name">{c.candidate_name}</p>
+        <p className="candidate-email">{c.email}</p>
+        <div className="skill-tags">{(c.skills || "").split(",").filter(Boolean).slice(0, 4).map((s, i) => <span className="skill-tag" key={i}>{s.trim()}</span>)}</div>
+      </div>
+      <div className="candidate-progress">
+        <div className="candidate-progress-track"><div className="candidate-progress-fill" style={{ width: `${c.match_score}%`, background: getScoreColor(c.match_score) }} /></div>
+        <span className="candidate-progress-label" style={{ color: getScoreColor(c.match_score) }}>{c.match_score}%</span>
+      </div>
+    </div>
+  ));
 
   return (
-    <div className={`app-root ${darkMode ? "dark" : ""}`}>
-      <div className="bg-blobs">
-        <div className="blob blob-1"></div>
-        <div className="blob blob-2"></div>
-        <div className="blob blob-3"></div>
-        <div className="blob blob-4"></div>
-      </div>
+    <div>
+      <div className="bg-glow-1"></div>
+      <div className="bg-glow-2"></div>
+      <div className="bg-glow-3"></div>
 
-      <div className="app-shell">
-        <div className="app-header">
-          <div>
-            <h1>Resume Screening System</h1>
-            <p>Upload resumes, define a role, and rank candidates by AI-matched relevance.</p>
+      <div className="app-layout">
+        <div className="sidebar">
+          <div className="sidebar-logo">
+            <div className="sidebar-logo-icon">RS</div>
+            <div className="sidebar-logo-text">Resume<br />Screener</div>
           </div>
-          <label className="theme-switch">
-            <input
-              type="checkbox"
-              checked={darkMode}
-              onChange={() => setDarkMode(!darkMode)}
-            />
-            <span className="switch-track">
-              <span className="switch-thumb">{darkMode ? "🌙" : "☀️"}</span>
-            </span>
-          </label>
+          <div className="sidebar-nav">
+            {NAV_ITEMS.map((item) => (
+              <button key={item} className={`sidebar-nav-item ${activeNav === item ? "active" : ""}`} onClick={() => setActiveNav(item)}>
+                <span className="sidebar-nav-dot"></span><span>{item}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Upload */}
-        <div className="section section-1">
-          <div className="section-label">
-            <span className="step-number">1</span>
-            <h2>Upload Resume</h2>
-          </div>
-          <input type="file" accept=".pdf,.docx" onChange={handleFileChange} />
-          <button onClick={handleUpload} disabled={loading} style={{ marginLeft: "10px" }}>
-            <span className="btn-content">
-              {loading && <span className="spinner"></span>}
-              {loading ? "Uploading..." : "Upload"}
-            </span>
-          </button>
-          {uploadResult && (
-            <div className="result-box">
-              <p>Resume ID: <span className="mono">{uploadResult.resume_id}</span></p>
-              <p>File: {uploadResult.file_name}</p>
+        <div className="main-content">
+          <div className="topbar">
+            <div>
+              <p className="topbar-title">{activeNav}</p>
+              <p className="topbar-sub">{jobResult ? jobResult.title : "No job selected yet"}</p>
             </div>
-          )}
-        </div>
-
-        {/* Job Description */}
-        <div className="section section-2">
-          <div className="section-label">
-            <span className="step-number">2</span>
-            <h2>Add Job Description</h2>
           </div>
-          <input
-            type="text"
-            placeholder="Job title"
-            value={jobTitle}
-            onChange={(e) => setJobTitle(e.target.value)}
-          />
-          <textarea
-            placeholder="Paste job description here..."
-            value={jobDescription}
-            onChange={(e) => setJobDescription(e.target.value)}
-            rows="5"
-          />
-          <button onClick={handleAddJob} disabled={jobLoading}>
-            <span className="btn-content">
-              {jobLoading && <span className="spinner"></span>}
-              {jobLoading ? "Adding..." : "Add Job"}
-            </span>
-          </button>
-          {jobResult && (
-            <div className="result-box">
-              <p>Job ID: <span className="mono">{jobResult.job_id}</span></p>
-              <p>Title: {jobResult.title}</p>
-            </div>
-          )}
-        </div>
 
-        {/* Match */}
-        <div className="section section-3">
-          <div className="section-label">
-            <span className="step-number">3</span>
-            <h2>Match Resume to Job</h2>
-          </div>
-          <button onClick={handleMatch} disabled={matchLoading}>
-            <span className="btn-content">
-              {matchLoading && <span className="spinner"></span>}
-              {matchLoading ? "Matching..." : "Run Match"}
-            </span>
-          </button>
+          <div className="content-area">
+            {activeNav === "Dashboard" && (
+              <>
+                {leaderboard && (
+                  <div className="hero-gauge-row">
+                    <div className="hero-gauge-card">
+                      <span className="hero-gauge-label">Top match</span>
+                      <HeroGauge score={topScore} />
+                      <p style={{ marginTop: "10px", fontSize: "12.5px", color: "#9CA3AF" }}>{topCandidate}</p>
+                    </div>
+                    <div className="stats-mini-grid">
+                      <div className="stat-card"><span className="stat-label">Total candidates</span><span className="stat-value">{leaderboard.total_candidates}</span></div>
+                      <div className="stat-card"><span className="stat-label">Average score</span><span className="stat-value accent-teal">{avgScore}%</span></div>
+                      <div className="stat-card"><span className="stat-label">Job role</span><span className="stat-value accent-purple" style={{ fontSize: "15px" }}>{leaderboard.job_title}</span></div>
+                      <div className="stat-card"><span className="stat-label">Status</span><span className="stat-value" style={{ fontSize: "15px" }}>Active</span></div>
+                    </div>
+                  </div>
+                )}
 
-          {matchLoading && (
-            <div className="processing-panel">
-              <span className="processing-dot"></span>
-              {PROCESSING_STEPS[processingStepIndex]}
-            </div>
-          )}
+                {leaderboard && leaderboard.leaderboard.length > 0 && <ScoreDistributionChart candidates={leaderboard.leaderboard} />}
 
-          {!matchLoading && matchResult && (
-            <div className="match-score-display">
-              <p style={{ margin: "0 0 2px", fontSize: "13px", color: "var(--text-secondary)" }}>
-                {matchResult.candidate_name} → {matchResult.job_title}
-              </p>
-              <span className="score-number" style={{ color: getScoreColor(matchResult.match_score) }}>
-                {matchResult.match_score}%
-              </span>
-              <div className="score-bar-track">
-                <div
-                  className="score-bar-fill"
-                  style={{
-                    width: `${matchResult.match_score}%`,
-                    background: getScoreColor(matchResult.match_score),
-                  }}
-                />
+                <div className="panel-grid">{uploadPanel}{jobPanel}</div>
+                {matchPanel}
+
+                <button onClick={handleGetLeaderboard} disabled={leaderboardLoading}>
+                  <span className="btn-content">{leaderboardLoading && <span className="spinner"></span>}{leaderboardLoading ? "Loading..." : "Refresh leaderboard"}</span>
+                </button>
+              </>
+            )}
+
+            {activeNav === "Candidates" && (
+              <>
+                <h2 className="section-title">All candidates</h2>
+                {leaderboard ? (
+                  <>
+                    <div className="candidates-toolbar">
+                      <input className="search-input" type="text" placeholder="Search by name or skill..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                    </div>
+                    {candidateRows(filteredCandidates)}
+                  </>
+                ) : (
+                  <div className="settings-placeholder">No leaderboard loaded yet \u2014 go to Dashboard and run a match first.</div>
+                )}
+              </>
+            )}
+
+            {activeNav === "Job postings" && (
+              <>
+                <h2 className="section-title">Current job posting</h2>
+                {jobResult ? (
+                  <div className="panel panel-2">
+                    <div className="panel-header"><div className="panel-icon">2</div><h2>{jobResult.title}</h2></div>
+                    <p style={{ fontSize: "13px", color: "#9CA3AF" }}>Job ID: <span className="mono">{jobResult.job_id}</span></p>
+                  </div>
+                ) : (
+                  <div className="settings-placeholder">No job added yet \u2014 go to Dashboard to add one.</div>
+                )}
+              </>
+            )}
+
+            {activeNav === "Settings" && (
+              <div className="settings-placeholder">
+                <i className="ti">\u2699</i>
+                Settings coming soon
               </div>
-            </div>
-          )}
-        </div>
+            )}
 
-        {/* Leaderboard */}
-        <div className="section section-4">
-          <div className="section-label">
-            <span className="step-number">4</span>
-            <h2>View Leaderboard</h2>
+            {error && <div className="error-msg">{error}</div>}
           </div>
-          <button onClick={handleGetLeaderboard} disabled={leaderboardLoading}>
-            <span className="btn-content">
-              {leaderboardLoading && <span className="spinner"></span>}
-              {leaderboardLoading ? "Loading..." : "Show Leaderboard"}
-            </span>
-          </button>
-
-          {leaderboard && (
-            <div style={{ marginTop: "16px" }}>
-              <div className="stats-dashboard">
-                <div className="stat-card">
-                  <span className="stat-label">Total Candidates</span>
-                  <span className="stat-value">{leaderboard.total_candidates}</span>
-                </div>
-                <div className="stat-card">
-                  <span className="stat-label">Average Score</span>
-                  <span className="stat-value">{avgScore}%</span>
-                </div>
-                <div className="stat-card">
-                  <span className="stat-label">Top Candidate</span>
-                  <span className="stat-value" style={{ fontSize: "15px" }}>{topCandidate}</span>
-                </div>
-              </div>
-
-              <table>
-                <thead>
-                  <tr>
-                    <th>Rank</th>
-                    <th>Candidate</th>
-                    <th>Email</th>
-                    <th>Skills</th>
-                    <th>Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leaderboard.leaderboard.map((c) => (
-                    <tr key={c.resume_id}>
-                      <td className="rank-badge">#{c.rank}</td>
-                      <td>{c.candidate_name}</td>
-                      <td>{c.email}</td>
-                      <td style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{c.skills}</td>
-                      <td>
-                        <span className="mini-bar-track">
-                          <span
-                            className="mini-bar-fill"
-                            style={{
-                              width: `${c.match_score}%`,
-                              background: getScoreColor(c.match_score),
-                              display: "block",
-                            }}
-                          />
-                        </span>
-                        <span className="mono" style={{ color: getScoreColor(c.match_score) }}>
-                          {c.match_score}%
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
-
-        {error && <div className="error-msg">{error}</div>}
       </div>
     </div>
   );
