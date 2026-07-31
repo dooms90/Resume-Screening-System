@@ -1,0 +1,14 @@
+# Python
+Backend/myenvz/
+Backend/__pycache__/
+Backend/uploaded_resumes/
+*.pyc
+
+# Node
+Frontend/node_modules/
+Frontend/dist/
+
+# OS/Editor
+.DS_Store
+Thumbs.db
+Backend/.env
