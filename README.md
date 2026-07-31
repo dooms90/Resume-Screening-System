@@ -48,12 +48,12 @@ An end-to-end resume screening web application that lets a recruiter upload resu
 ```text
 resume-screening-system/
 ├── backend/
-│   ├── main.py             # FastAPI app + all API routes
-│   ├── database.py         # SQLAlchemy engine/session setup
-│   ├── models.py           # Resume, JobDescription, MatchResult tables
-│   ├── resume_parser.py    # PDF/DOCX text extraction
-│   ├── nlp_extractor.py    # Name/email/phone/skills extraction
-│   ├── matcher.py          # Semantic similarity scoring
+│   ├── main.py             
+│   ├── database.py         
+│   ├── models.py           
+│   ├── resume_parser.py    
+│   ├── nlp_extractor.py    
+│   ├── matcher.py          
 │   └── requirements.txt
 │
 └── frontend/
