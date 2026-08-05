@@ -41,7 +41,6 @@ An end-to-end resume screening web application that lets a recruiter upload resu
 | **Resume Parsing** | pdfplumber, python-docx                         |
 
 ---
-
 ## Project Structure
 
 ```text
