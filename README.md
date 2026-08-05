@@ -86,7 +86,6 @@ The matching model was validated by comparing two scenarios:
 
 * **Relevant Resume + Matching Job Description** → **72.2% Match**
 * **Irrelevant Resume + Unrelated Job Description** → **12.2% Match**
-
 These results demonstrate that the model can effectively distinguish between strong and weak candidate-job matches based on semantic meaning rather than simple keyword overlap.
 
 Testing
