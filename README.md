@@ -92,4 +92,4 @@ These results demonstrate that the model can effectively distinguish between str
 
 Testing
 <br>
-A 12-point manual test checklist covering valid uploads, invalid file types, empty/short inputs, multi-candidate ranking, and backend-down error handling was run against the system — all 12 passed. 
+A 12-point manual test checklist covering valid uploads, invalid file types, empty/short inputs, multi-candidate ranking, and backend-down error handling was run against the system — All 12 test passed. 
