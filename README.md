@@ -73,7 +73,7 @@ resume-screening-system/
 
 ---
 
-## How Resume Works
+## How Resume Matching Works
 
 1. The **resume text** and **job description** are converted into sentence embeddings using **`all-MiniLM-L6-v2`**.
 2. **Cosine Similarity** is calculated between the two embeddings.
