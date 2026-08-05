@@ -29,7 +29,6 @@ An end-to-end resume screening web application that lets a recruiter upload resu
    * Provides clear error messages for invalid files, empty inputs, and missing records.
 
 ---
-
 ## Tech Stack
 
 | Layer              | Technology                                      |
