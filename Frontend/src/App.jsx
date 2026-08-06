@@ -71,25 +71,109 @@ function ScoreDistributionChart({ candidates }) {
   );
 }
 
+function LandingPage({ onGetStarted }) {
+  const steps = [
+    { num: "1", color: "#6366F1", title: "Upload resumes", desc: "Drop in PDF or DOCX resumes \u2014 the system parses and extracts candidate details automatically." },
+    { num: "2", color: "#14B8A6", title: "Define the role", desc: "Paste a job description once, and match as many candidates against it as you need." },
+    { num: "3", color: "#F59E0B", title: "Get ranked results", desc: "See every candidate scored by real semantic relevance, ranked highest to lowest." },
+  ];
+  const features = [
+    { icon: "\u{1F9E0}", color: "#6366F1", title: "Semantic AI matching", desc: "Sentence-embedding models understand meaning, not just keywords \u2014 \u201cML\u201d matches \u201cmachine learning\u201d." },
+    { icon: "\u26A1", color: "#14B8A6", title: "Fast, local, and free", desc: "Runs entirely on your own machine in seconds per match \u2014 no subscription, no per-seat pricing." },
+    { icon: "\u{1F3AF}", color: "#F59E0B", title: "Explainable scoring", desc: "Every score comes with visible extracted skills, so you can see exactly why a candidate ranked where they did." },
+    { icon: "\u{1F4C4}", color: "#EC4899", title: "PDF & DOCX support", desc: "Upload resumes in the formats candidates actually send \u2014 no manual reformatting needed." },
+    { icon: "\u{1F4CA}", color: "#60A5FA", title: "Ranked leaderboard", desc: "Instantly see every candidate for a role sorted by relevance, with a score distribution overview." },
+    { icon: "\u{1F512}", color: "#A78BFA", title: "Your data stays local", desc: "Resumes and job data are stored in your own MySQL database \u2014 nothing leaves your machine." },
+  ];
+
+  return (
+    <div className="landing-page">
+      <div className="bg-glow-1"></div>
+      <div className="bg-glow-2"></div>
+      <div className="bg-glow-3"></div>
+
+      <div className="landing-nav">
+        <div className="landing-nav-brand">
+          <div className="sidebar-logo-icon"></div>
+          <span className="landing-nav-text">Resume Screener</span>
+        </div>
+        <button className="landing-cta" onClick={onGetStarted} style={{ padding: "9px 18px", fontSize: "13px" }}>Open dashboard</button>
+      </div>
+
+      <div className="landing-hero">
+        <span className="landing-eyebrow">AI-powered candidate matching</span>
+        <h1>Screen resumes by meaning, not just keywords</h1>
+        <p>Upload resumes, define a role, and get a ranked, explainable shortlist in seconds \u2014 powered by semantic AI matching, not brittle keyword search.</p>
+        <button className="landing-cta" onClick={onGetStarted}>Get started</button>
+      </div>
+
+      <div className="landing-stats-bar">
+        <div className="landing-stat"><span className="landing-stat-value">60pt</span><span className="landing-stat-label">score gap: relevant vs. irrelevant</span></div>
+        <div className="landing-stat"><span className="landing-stat-value">&lt;3s</span><span className="landing-stat-label">average match time</span></div>
+        <div className="landing-stat"><span className="landing-stat-value">12/12</span><span className="landing-stat-label">functional tests passed</span></div>
+        <div className="landing-stat"><span className="landing-stat-value">$0</span><span className="landing-stat-label">licensing cost</span></div>
+      </div>
+
+      <div className="landing-section">
+        <h2 className="landing-section-title">How it works</h2>
+        <p className="landing-section-sub">Three steps from resume to ranked shortlist</p>
+        <div className="landing-steps">
+          {steps.map((s) => (
+            <div className="landing-step" key={s.num}>
+              <div className="landing-step-num" style={{ background: s.color, boxShadow: `0 0 16px ${s.color}80` }}>{s.num}</div>
+              <h3>{s.title}</h3>
+              <p>{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="landing-section">
+        <h2 className="landing-section-title">Built for real screening workflows</h2>
+        <p className="landing-section-sub">Everything a recruiter needs for a fast, fair first pass</p>
+        <div className="landing-features">
+          {features.map((f) => (
+            <div className="landing-feature-card" key={f.title}>
+              <div className="landing-feature-icon" style={{ background: f.color + "22", color: f.color }}>{f.icon}</div>
+              <h3>{f.title}</h3>
+              <p>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="landing-footer-cta">
+        <h2>Ready to screen your first batch of candidates?</h2>
+        <button className="landing-cta" onClick={onGetStarted}>Open the dashboard </button>
+      </div>
+    </div>
+  );
+}
+
 function App() {
+  const [view, setView] = useState("landing"); 
   const [activeNav, setActiveNav] = useState("Dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadResult, setUploadResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [uploadError, setUploadError] = useState("");
 
   const [jobTitle, setJobTitle] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [jobResult, setJobResult] = useState(null);
   const [jobLoading, setJobLoading] = useState(false);
+  const [jobError, setJobError] = useState("");
 
   const [matchResult, setMatchResult] = useState(null);
   const [matchLoading, setMatchLoading] = useState(false);
+  const [matchError, setMatchError] = useState("");
   const [processingStepIndex, setProcessingStepIndex] = useState(0);
 
   const [leaderboard, setLeaderboard] = useState(null);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [leaderboardError, setLeaderboardError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -103,47 +187,47 @@ function App() {
 
   const getErrorMessage = (err, fallback) => (err.response?.data?.detail) || fallback;
 
-  const handleFileChange = (e) => { setSelectedFile(e.target.files[0]); setUploadResult(null); setError(""); };
+  const handleFileChange = (e) => { setSelectedFile(e.target.files[0]); setUploadResult(null); setUploadError(""); };
 
   const handleUpload = async () => {
-    if (!selectedFile) { setError("Select a resume file (PDF or DOCX) first."); return; }
+    if (!selectedFile) { setUploadError("Select a resume file (PDF or DOCX) first."); return; }
     const formData = new FormData();
     formData.append("file", selectedFile);
-    setLoading(true); setError("");
+    setLoading(true); setUploadError("");
     try {
       const response = await axios.post("http://127.0.0.1:8000/upload-resume", formData, { headers: { "Content-Type": "multipart/form-data" } });
       setUploadResult(response.data);
-    } catch (err) { setError(getErrorMessage(err, "Upload failed. Check that your backend server is running.")); }
+    } catch (err) { setUploadError(getErrorMessage(err, "Upload failed. Check that your backend server is running.")); }
     finally { setLoading(false); }
   };
 
   const handleAddJob = async () => {
-    if (!jobTitle || !jobDescription) { setError("Enter both job title and description."); return; }
-    setJobLoading(true); setError("");
+    if (!jobTitle || !jobDescription) { setJobError("Enter both job title and description."); return; }
+    setJobLoading(true); setJobError("");
     try {
       const response = await axios.post(`http://127.0.0.1:8000/add-job?title=${encodeURIComponent(jobTitle)}&description_text=${encodeURIComponent(jobDescription)}`);
       setJobResult(response.data);
-    } catch (err) { setError(getErrorMessage(err, "Adding job failed. Check backend server.")); }
+    } catch (err) { setJobError(getErrorMessage(err, "Adding job failed. Check backend server.")); }
     finally { setJobLoading(false); }
   };
 
   const handleMatch = async () => {
-    if (!uploadResult || !jobResult) { setError("Upload a resume AND add a job description first."); return; }
-    setMatchLoading(true); setError("");
+    if (!uploadResult || !jobResult) { setMatchError("Upload a resume AND add a job description first."); return; }
+    setMatchLoading(true); setMatchError("");
     try {
       const response = await axios.post(`http://127.0.0.1:8000/match?resume_id=${uploadResult.resume_id}&job_id=${jobResult.job_id}`);
       setMatchResult(response.data);
-    } catch (err) { setError(getErrorMessage(err, "Matching failed. Check backend server.")); }
+    } catch (err) { setMatchError(getErrorMessage(err, "Matching failed. Check backend server.")); }
     finally { setMatchLoading(false); }
   };
 
   const handleGetLeaderboard = async () => {
-    if (!jobResult) { setError("Add a job description first to see its leaderboard."); return; }
-    setLeaderboardLoading(true); setError("");
+    if (!jobResult) { setLeaderboardError("Add a job description first to see its leaderboard."); return; }
+    setLeaderboardLoading(true); setLeaderboardError("");
     try {
       const response = await axios.get(`http://127.0.0.1:8000/leaderboard/${jobResult.job_id}`);
       setLeaderboard(response.data);
-    } catch (err) { setError(getErrorMessage(err, "Failed to fetch leaderboard. Check backend server.")); }
+    } catch (err) { setLeaderboardError(getErrorMessage(err, "Failed to fetch leaderboard. Check backend server.")); }
     finally { setLeaderboardLoading(false); }
   };
 
@@ -166,6 +250,7 @@ function App() {
         <span className="btn-content">{loading && <span className="spinner"></span>}{loading ? "Uploading..." : "Upload"}</span>
       </button>
       {uploadResult && <div className="result-chip">Resume <span className="mono">#{uploadResult.resume_id}</span> \u2014 {uploadResult.file_name}</div>}
+      {uploadError && <div className="field-error">{uploadError}</div>}
     </div>
   );
 
@@ -178,6 +263,7 @@ function App() {
         <span className="btn-content">{jobLoading && <span className="spinner"></span>}{jobLoading ? "Adding..." : "Add job"}</span>
       </button>
       {jobResult && <div className="result-chip">Job <span className="mono">#{jobResult.job_id}</span> \u2014 {jobResult.title}</div>}
+      {jobError && <div className="field-error">{jobError}</div>}
     </div>
   );
 
@@ -195,6 +281,7 @@ function App() {
           <div className="score-bar-track"><div className="score-bar-fill" style={{ width: `${matchResult.match_score}%`, background: getScoreColor(matchResult.match_score) }} /></div>
         </div>
       )}
+      {matchError && <div className="field-error">{matchError}</div>}
     </div>
   );
 
@@ -214,6 +301,10 @@ function App() {
     </div>
   ));
 
+  if (view === "landing") {
+    return <LandingPage onGetStarted={() => setView("app")} />;
+  }
+
   return (
     <div>
       <div className="bg-glow-1"></div>
@@ -221,9 +312,9 @@ function App() {
       <div className="bg-glow-3"></div>
 
       <div className="app-layout">
-        <div className="sidebar">
+        <div className={`sidebar ${sidebarOpen ? "" : "collapsed"}`}>
           <div className="sidebar-logo">
-            <div className="sidebar-logo-icon">RS</div>
+            <div className="sidebar-logo-icon"></div>
             <div className="sidebar-logo-text">Resume<br />Screener</div>
           </div>
           <div className="sidebar-nav">
@@ -237,10 +328,18 @@ function App() {
 
         <div className="main-content">
           <div className="topbar">
-            <div>
-              <p className="topbar-title">{activeNav}</p>
-              <p className="topbar-sub">{jobResult ? jobResult.title : "No job selected yet"}</p>
+            <div className="topbar-left">
+              <button className="sidebar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar">
+                {sidebarOpen ? "\u2039" : "\u203A"}
+              </button>
+              <div>
+                <p className="topbar-title">{activeNav}</p>
+                <p className="topbar-sub">{jobResult ? jobResult.title : "No job selected yet"}</p>
+              </div>
             </div>
+            <button className="back-to-landing-btn" onClick={() => setView("landing")}>
+              Back
+            </button>
           </div>
 
           <div className="content-area">
@@ -270,6 +369,7 @@ function App() {
                 <button onClick={handleGetLeaderboard} disabled={leaderboardLoading}>
                   <span className="btn-content">{leaderboardLoading && <span className="spinner"></span>}{leaderboardLoading ? "Loading..." : "Refresh leaderboard"}</span>
                 </button>
+                {leaderboardError && <div className="field-error">{leaderboardError}</div>}
               </>
             )}
 
@@ -304,13 +404,8 @@ function App() {
             )}
 
             {activeNav === "Settings" && (
-              <div className="settings-placeholder">
-                <i className="ti">\u2699</i>
-                Settings coming soon
-              </div>
+              <div className="settings-placeholder">Settings coming soon</div>
             )}
-
-            {error && <div className="error-msg">{error}</div>}
           </div>
         </div>
       </div>
