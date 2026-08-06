@@ -29,7 +29,6 @@ An end-to-end resume screening web application that lets a recruiter upload resu
    * Provides clear error messages for invalid files, empty inputs, and missing records.
 
 ---
-
 ## Tech Stack
 
 | Layer              | Technology                                      |
@@ -42,7 +41,6 @@ An end-to-end resume screening web application that lets a recruiter upload resu
 | **Resume Parsing** | pdfplumber, python-docx                         |
 
 ---
-
 ## Project Structure
 
 ```text
@@ -75,7 +73,7 @@ resume-screening-system/
 
 ---
 
-## How Matching Works
+## How Resume Matching Works
 
 1. The **resume text** and **job description** are converted into sentence embeddings using **`all-MiniLM-L6-v2`**.
 2. **Cosine Similarity** is calculated between the two embeddings.
@@ -88,9 +86,8 @@ The matching model was validated by comparing two scenarios:
 
 * **Relevant Resume + Matching Job Description** → **72.2% Match**
 * **Irrelevant Resume + Unrelated Job Description** → **12.2% Match**
-
 These results demonstrate that the model can effectively distinguish between strong and weak candidate-job matches based on semantic meaning rather than simple keyword overlap.
 
 Testing
 <br>
-A 12-point manual test checklist covering valid uploads, invalid file types, empty/short inputs, multi-candidate ranking, and backend-down error handling was run against the system — all 12 passed. 
+A 12-point manual test checklist covering valid uploads, invalid file types, empty/short inputs, multi-candidate ranking, and backend-down error handling was run against the system — All 12 test passed. 
