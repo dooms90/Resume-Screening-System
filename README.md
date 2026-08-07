@@ -3,7 +3,6 @@
 An end-to-end resume screening web application that lets a recruiter upload resumes, define a job description, and automatically get a ranked leaderboard of candidates scored by semantic AI matching—not just keyword overlap.
 
 ## Features
-
 1. **Resume Parsing**
 
    * Extracts text from **PDF** and **DOCX** resumes.
