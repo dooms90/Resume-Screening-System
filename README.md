@@ -26,7 +26,6 @@ An end-to-end resume screening web application that lets a recruiter upload resu
 6. **Robust Error Handling**
 
    * Provides clear error messages for invalid files, empty inputs, and missing records.
-
 ---
 ## Tech Stack
 
