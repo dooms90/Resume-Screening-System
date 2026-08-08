@@ -37,7 +37,6 @@ An end-to-end resume screening web application that lets a recruiter upload resu
 | **NLP**            | spaCy (`en_core_web_sm`)                        |
 | **AI Matching**    | Sentence Transformers (`all-MiniLM-L6-v2`, CPU) |
 | **Resume Parsing** | pdfplumber, python-docx                         |
-
 ---
 ## Project Structure
 
