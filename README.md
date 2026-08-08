@@ -71,14 +71,12 @@ resume-screening-system/
 ---
 
 ## How Resume Matching Works
-
 1. The **resume text** and **job description** are converted into sentence embeddings using **`all-MiniLM-L6-v2`**.
 2. **Cosine Similarity** is calculated between the two embeddings.
 3. The similarity score is converted into a **0–100% relevance score**.
 4. Candidates are ranked based on their semantic similarity score.
 
 ### Validation
-
 The matching model was validated by comparing two scenarios:
 
 * **Relevant Resume + Matching Job Description** → **72.2% Match**
